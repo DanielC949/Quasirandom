@@ -1,6 +1,7 @@
 const {
   axios,
   fs,
+  https,
   discordClient: client
 } = require('./imports.js');
 
@@ -63,9 +64,39 @@ const WebScraperLib = {
     return desc;
   }
 };
+const AjaxLib = {
+  httpsget: function(url, headers, encoding = 'utf8') {
+    return new Promise((resolve, reject) => {
+      let req = https.get(url, {headers: headers}, res => {
+        res.setEncoding(encoding);
+        let data = '';
+        res.on('data', d => data += d);
+        res.on('end', () => resolve(data));
+      });
+      req.on('error', e => reject(e));
+      req.end();
+    });
+  },
+  httpspost: function(url, headers, data, encoding = 'utf8') {
+    return new Promise((resovle, reject) => {
+      let req = https.request(url, {headers: headers}, res => {
+        res.setEncoding(encoding);
+        let data = '';
+        res.on('data', d => data += d);
+        res.on('end', () => resolve(data));
+      });
+      req.on('error', e => reject(e));
+      if (data) {
+        req.write(data);
+      }
+      req.end();
+    });
+  }
+}
 
 
 module.exports = {
   Lib: Lib,
-  WebScraperLib: WebScraperLib
+  WebScraperLib: WebScraperLib,
+  AjaxLib: AjaxLib
 };

@@ -11,7 +11,8 @@ module.exports = {
       console.log(`Logged in as ${client.user.tag}!`);
       server = client.guilds.cache.get(serverID);
 
-      require('./gtc19.js').init();
+      //require('./gtc19.js').init(); //new data display method invalidates current approach, see https://github.com/adityaxdiwakar/gt-jpj-tracking
+      require('./twitch-announcer.js').init();
     });
   },
   getServer: function() {

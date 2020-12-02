@@ -16,7 +16,7 @@ function StreamAnnouncer() {
   async function reportLive() {
     await updateTokenExpiration();
     for (let channel of followedChannels) {
-      let res = await getChannel(channel);
+      let res = await getChannel(channel.display_name);
       if (!res) {
         continue;
       }
@@ -114,6 +114,7 @@ function StreamAnnouncer() {
         channelAlerts.send('Unhandled exception: ' + e);
       }
     }, 60000);
+    reportLive();
   }
 }
 

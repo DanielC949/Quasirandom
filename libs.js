@@ -22,9 +22,6 @@ const Lib = {
     }
     return out;
   },
-  dmMe: async function(msg) {
-    (await client.users.cache.get('669717327293710337')).send(msg);
-  },
   getFirstWord: function(str) {
     let out = '';
     for (let c of str) {
@@ -39,6 +36,16 @@ const Lib = {
       await fs.promises.writeFile(filename, data);
       isWritten = (await fs.promises.readFile(filename, 'utf8')) === data;
     }
+  },
+  discordEscape: function(str, options = { underscore: true, linkEmbed: true, asterisk: true }) {
+    let res = str;
+    if (options.underscore === undefined || options.underscore)
+      res = res.replace(/_/, '\\_');
+    if (options.linkEmbed === undefined || options.linkEmbed)
+      res = res.replace(/(https?:\/\/[\w\-\.\/%&]+)/, '<$1>');
+    if (options.asterisk === undefined || options.asterisk)
+      res = res.replace(/\*/, '\\*');
+    return res;
   }
 };
 const WebScraperLib = {
@@ -95,10 +102,20 @@ const AjaxLib = {
 }
 const Logger = () => {
   const logChannel = require('./serverready.js').getServer().channels.cache.get('805146337741242368');
+  const logFile = fs.createWriteStream('data/Quasirandom/log.txt', {flags: 'a'});
   return {
-    error: msg => logChannel.send('@admin ERROR: ' + msg),
-    warn: msg => logChannel.send('@admin WARNING: ' + msg),
-    info: msg => logChannel.send('INFO: ' + msg)
+    error: msg => {
+      logChannel.send('ERROR: ' + msg);
+      logFile.write(`${(new Date(Date.now())).toUTCString()}: ERROR: ${msg}`);
+    },
+    warn: msg => {
+      logChannel.send('WARNING: ' + msg);
+      logFile.write(`${(new Date(Date.now())).toUTCString()}: WARNING: ${msg}`);
+    },
+    info: msg => {
+      logChannel.send('INFO: ' + msg);
+      logFile.write(`${(new Date(Date.now())).toUTCString()}: INFO: ${msg}`);
+    }
   };
 }
 

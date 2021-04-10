@@ -3,8 +3,13 @@ const {
   fs
 } = require('./imports.js');
 
+process.on('uncaughtException', (error, origin) => {
+  Logger.error(e.name + ': ' + e.message);
+  process.exitCode = 1;
+})
+
 console.log('Logging in...');
-client.login(fs.readFileSync('data/Quasirandom/token.txt', 'utf8').split('\r\n')[0]); //compensate for line ending
+client.login(fs.readFileSync('data/Quasirandom/token', 'utf8'));
 
 require('./serverready.js').prepare();
 

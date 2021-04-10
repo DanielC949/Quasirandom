@@ -2,6 +2,7 @@ const {
   axios,
   fs,
   https,
+  dns,
   discordClient: client
 } = require('./imports.js');
 
@@ -40,11 +41,11 @@ const Lib = {
   discordEscape: function(str, options = { underscore: true, linkEmbed: true, asterisk: true }) {
     let res = str;
     if (options.underscore === undefined || options.underscore)
-      res = res.replace(/_/, '\\_');
+      res = res.replaceAll(/_/g, '\\_');
     if (options.linkEmbed === undefined || options.linkEmbed)
-      res = res.replace(/(https?:\/\/[\w\-\.\/%&]+)/, '<$1>');
+      res = res.replaceAll(/(https?:\/\/[\w\-\.\/%&]+)/g, '<$1>');
     if (options.asterisk === undefined || options.asterisk)
-      res = res.replace(/\*/, '\\*');
+      res = res.replaceAll(/\*/g, '\\*');
     return res;
   }
 };
@@ -72,6 +73,14 @@ const WebScraperLib = {
   }
 };
 const AjaxLib = {
+  isConnected: async function() {
+    try {
+      await dns.promises.lookupService('8.8.8.8', 53);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
   httpsget: function(url, headers, encoding = 'utf8') {
     return new Promise((resolve, reject) => {
       let req = https.get(url, {headers: headers}, res => {
@@ -105,16 +114,22 @@ const Logger = () => {
   const logFile = fs.createWriteStream('data/Quasirandom/log.txt', {flags: 'a'});
   return {
     error: msg => {
-      logChannel.send('ERROR: ' + msg);
-      logFile.write(`${(new Date(Date.now())).toUTCString()}: ERROR: ${msg}`);
+      logFile.write(`${(new Date(Date.now())).toUTCString()}: ERROR: ${msg}\n`);
+      try {
+        logChannel.send('ERROR: ' + msg);
+      } catch (e) { }
     },
     warn: msg => {
-      logChannel.send('WARNING: ' + msg);
-      logFile.write(`${(new Date(Date.now())).toUTCString()}: WARNING: ${msg}`);
+      logFile.write(`${(new Date(Date.now())).toUTCString()}: WARNING: ${msg}\n`);
+      try {
+        logChannel.send('WARNING: ' + msg);
+      } catch (e) { }
     },
     info: msg => {
-      logChannel.send('INFO: ' + msg);
-      logFile.write(`${(new Date(Date.now())).toUTCString()}: INFO: ${msg}`);
+      logFile.write(`${(new Date(Date.now())).toUTCString()}: INFO: ${msg}\n`);
+      try {
+        logChannel.send('INFO: ' + msg);
+      } catch (e) { }
     }
   };
 }

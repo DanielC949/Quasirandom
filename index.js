@@ -4,7 +4,9 @@ const {
 } = require('./imports.js');
 
 process.on('uncaughtException', (error, origin) => {
-  Logger.error(e.name + ': ' + e.message);
+  const logger = require('./libs.js').Logger;
+  logger.error(error.name + ': ' + error.message);
+  logger.finalize();
   process.exitCode = 1;
 })
 

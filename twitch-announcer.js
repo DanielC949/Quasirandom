@@ -151,4 +151,4 @@ function StreamAnnouncer() {
 
 module.exports = {
   init: StreamAnnouncer()
-}
+};

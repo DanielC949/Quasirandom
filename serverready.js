@@ -13,6 +13,7 @@ module.exports = {
 
       //require('./gtc19.js').init(); //new data display method invalidates current approach, see https://github.com/adityaxdiwakar/gt-jpj-tracking
       require('./twitch-announcer.js').init();
+      require('./vc-announcer.js').init();
     });
   },
   getServer: function() {

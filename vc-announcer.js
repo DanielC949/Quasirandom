@@ -15,19 +15,21 @@ function VCAnnouncer() {
   async function checkStreaming() {
     const now = Date.now();
     for (let e of lastLive) {
-      if (e[1] - now > 300000) {
+      if (now - e[1] > 300000) {
         lastLive.delete(e[0]);
       }
     }
     for (let watch of watchedChannels) {
       for (let user of watch.vc.members) {
         user = user[1];
-        if (!lastLive.has(user.id) && user.voice.streaming) {
-          const game = user.presence.activities.filter(e => e.type === 'PLAYING');
-          try {
-            watch.text.send(`${user.displayName} is streaming${game.length > 0 ? ' ' + game[0].name : ''}`);
-          } catch (e) {
-            continue;
+        if (user.voice.streaming) {
+          if (!lastLive.has(user.id)) {
+            const game = user.presence.activities.filter(e => e.type === 'PLAYING');
+            try {
+              watch.text.send(`${user.displayName} is streaming${game.length > 0 ? ' ' + game[0].name : ''}`);
+            } catch (e) {
+              continue;
+            }
           }
           lastLive.set(user.id, now);
         }
@@ -46,7 +48,7 @@ function VCAnnouncer() {
       try {
         checkStreaming();
       } catch (e) { }
-    }, 10000);
+    }, 60000);
   }
 }
 

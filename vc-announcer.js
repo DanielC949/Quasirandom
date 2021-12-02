@@ -2,10 +2,6 @@ const {
   discordClient: client,
   fs
 } = require('./imports.js');
-const {
-  Lib,
-  AjaxLib
-} = require('./libs.js');
 const { Logger } = require('./logger.js');
 const server = require('./serverready.js').getServer();
 
@@ -35,7 +31,7 @@ function VCAnnouncer() {
 
   async function sendStreamingAlert(member, channel) {
     if (!channel) {
-      Logger.warn(`vc-announcer, sendStreamingAlert called with null channel`);
+      Logger.warn(`[vc-announcer] sendStreamingAlert called with null channel`);
       return;
     }
 
@@ -44,12 +40,12 @@ function VCAnnouncer() {
     try {
       channel.send(`${member.displayName} is streaming${game?.length > 0 ? ' ' + game?.[0].name : ''}`);
     } catch (e) {
-      Logger.warn('vc-announcer, unable to send streaming alert: ' + e);
+      Logger.warn('[vc-announcer] unable to send streaming alert: ' + e);
     }
   }
 
   return async function() {
-    watchedChannels = JSON.parse(fs.readFileSync('data/vc-announcer/watched.json', 'utf8')).map(e => {
+    watchedChannels = JSON.parse(await fs.promises.readFile('data/vc-announcer/watched.json', 'utf8')).map(e => {
       e.vc = server.channels.cache.get(e.vc);
       e.text = server.channels.cache.get(e.text);
       return e;

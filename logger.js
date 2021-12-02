@@ -1,6 +1,8 @@
+const CONSTANTS = require('./constants.js');
+const { fs } = require('./imports.js');
 
 const Logger = () => {
-  const logChannel = require('./serverready.js').getServer().channels.cache.get('805146337741242368');
+  const logChannel = require('./serverready.js').getServer().channels.cache.get(CONSTANTS.guild_id);
   const logFile = fs.createWriteStream('data/Quasirandom/log.txt', {flags: 'a'});
   return {
     error: (msg, suppressSend = false) => {

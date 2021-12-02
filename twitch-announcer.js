@@ -1,6 +1,7 @@
 const {
   discordClient: client,
-  fs
+  fs,
+  djsBuilders: builder
 } = require('./imports.js');
 const {
   Lib,
@@ -9,7 +10,7 @@ const {
 const { Logger } = require('./logger.js');
 const server = require('./serverready.js').getServer();
 
-const alertChannelID = '782339361450098718';
+const CONSTANTS = require('./constants.js');
 
 function StreamAnnouncer() {
   let channelAlerts, oauth, followedChannels = [], lastSeen = new Map();
@@ -54,7 +55,7 @@ function StreamAnnouncer() {
       return null;
     }
     if (res.status && res.status !== 200) {
-      Logger.error('in twitch-announcer, getChannel(): ' + res.status);
+      Logger.error('[twitch-announcer::getChannel()]: ' + res.status);
     }
     return res.data?.length > 0 && res.data[0].display_name.toLowerCase() === channelName ? res.data[0] : null;
   }
@@ -84,70 +85,123 @@ function StreamAnnouncer() {
     if (token.access_token) {
       oauth.cur_token = token.access_token;
       fs.promises.writeFile('data/twitch-announcer/oauth.json', JSON.stringify(oauth));
-      Logger.info('in twitch-announcer: refreshed OAuth token');
+      Logger.info('[twitch-announcer] refreshed OAuth token');
     } else {
-      Logger.error('in twitch-announcer, refreshToken(), returned ' + token.status);
+      Logger.error('[twitch-announcer::refreshToken()] returned ' + token.status);
     }
   }
 
   async function bindCommands() {
-    client.on('message', async message => {
-      if (message.channel.id !== alertChannelID) {
+    client.commandHeaders.push(
+      new builder.SlashCommandBuilder()
+      .setName('follow')
+      .setDescription('Follows this Twitch channel')
+      .addStringOption(option =>
+        option.setName('channel')
+        .setDescription('Channel to follow')
+        .setRequired(true)
+      )
+      .toJSON()
+    );
+    client.commands.set('follow', async interaction => {
+      if (interaction.channelId !== CONSTANTS.twitch_alerts_channel_id) {
+        interaction.reply({
+          content: 'Command \'follow\' is not available in this channel',
+          ephemeral: true
+        });
         return;
       }
-      let msg = message.content.toLowerCase().split(' ');
-      if (msg.length === 0) return;
-      if (msg.length === 2 && msg[0] === '!follow') {
-        for (let channel of followedChannels) {
-          if (channel.display_name === msg[1]) {
-            channelAlerts.send('Already following ' + msg[1]);
-            return;
-          }
+      const newChannel = interaction.options.getString('channel').toLowerCase();
+      for (let channel of followedChannels) {
+        if (channel.display_name === newChannel) {
+          interaction.reply({
+            content: `Already following ${newChannel}`,
+            ephemeral: true
+          });
+          return;
         }
-        followedChannels.push({display_name: msg[1], started_at: ''});
-        channelAlerts.send('Now following ' + msg[1]);
+        followedChannels.push({
+          display_name: newChannel,
+          started_at: ''
+        });
         fs.promises.writeFile('data/twitch-announcer/following.json', JSON.stringify(followedChannels));
-        if (await getChannel(msg[1]) === null) {
-          channelAlerts.send('Warning: ' + msg[1] + ' has not streamed recently or does not exist');
+        if (await getChannel(newChannel) === null) {
+          interaction.reply(`Now following ${newChannel}\nWarning: ${newChannel} has not streamed recently or does not exist`);
+        } else {
+          interaction.reply(`Now following ${newChannel}`);
         }
-      } else if (msg.length == 2 && msg[0] === '!unfollow') {
-        for (let i = 0; i < followedChannels.length; i++) {
-          if (followedChannels[i].display_name === msg[1]) {
-            channelAlerts.send('Unfollowed ' + msg[1]);
-            followedChannels.splice(i, 1);
-            fs.promises.writeFile('data/twitch-announcer/following.json', JSON.stringify(followedChannels));
-            return;
-          }
-        }
-        channelAlerts.send(msg[1] + ' not found');
-      } else if (msg[0] === '!followlist') {
-        let channels = [];
-        for (let channel of followedChannels) {
-          channels.push(channel.display_name);
-        }
-        channelAlerts.send(channels.join(', '));
-      } else if (msg[0] === '!check') {
-        reportLive();
       }
     });
+
+    client.commandHeaders.push(
+      new builder.SlashCommandBuilder()
+      .setName('unfollow')
+      .setDescription('Unfollows this Twitch channel')
+      .addStringOption(option =>
+        option.setName('channel')
+        .setDescription('Channel to unfollow')
+        .setRequired(true))
+      .toJSON()
+    );
+    client.commands.set('unfollow', async interaction => {
+      const channel = interaction.options.getString('channel').toLowerCase();
+      for (let i = 0; i < followedChannels.length; i++) {
+        if (followedChannels[i].display_name === channel) {
+          interaction.reply('Unfollowed ' + channel);
+          followedChannels.splice(i, 1);
+          fs.promises.writeFile('data/twitch-announcer/following.json', JSON.stringify(followedChannels));
+          return;
+        }
+      }
+      interaction.reply({
+        content: `${channel} not found`,
+        ephemeral: true
+      });
+    });
+
+    client.commandHeaders.push(
+      new builder.SlashCommandBuilder()
+      .setName('followlist')
+      .setDescription('Lists all followed channels')
+      .toJSON()
+    );
+    client.commands.set('followlist', async interaction => {
+      let channels = [];
+      for (let channel of followedChannels) {
+        channels.push(channel.display_name);
+      }
+      if (channels.length === 0) {
+        interaction.reply('No followed channels');
+      } else {
+        interaction.reply(channels.join(', '));
+      }
+    });
+
+    client.commandHeaders.push(
+      new builder.SlashCommandBuilder()
+      .setName('check')
+      .setDescription('Checks for channels which recently started streaming')
+      .toJSON()
+    );
+    client.commands.set('check', async interaction => reportLive());
   }
 
-  return function() {
-    channelAlerts = server.channels.cache.get(alertChannelID);
-    bindCommands();
-    oauth = JSON.parse(fs.readFileSync('data/twitch-announcer/oauth.json', 'utf8'));
-    followedChannels = JSON.parse(fs.readFileSync('data/twitch-announcer/following.json', 'utf8'));
+  return async function() {
+    channelAlerts = server.channels.cache.get(CONSTANTS.twitch_alerts_channel_id);
+    await bindCommands();
+    oauth = JSON.parse(await fs.promises.readFile('data/twitch-announcer/oauth.json', 'utf8'));
+    followedChannels = JSON.parse(await fs.promises.readFile('data/twitch-announcer/following.json', 'utf8'));
     setInterval(() => {
       try {
         reportLive();
       } catch (e) {
-        Logger.error('in twitch-announcer: ' + e);
+        Logger.error('[twitch-announcer] ' + e);
       }
     }, 60000);
     try {
       reportLive();
     } catch (e) {
-      Logger.error('in twitch-announcer: ' + e);
+      Logger.error('[twitch-announcer] ' + e);
     }
   }
 }

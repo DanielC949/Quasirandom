@@ -1,27 +1,43 @@
 const {
   discordClient: client,
-  fs
+  djsREST: REST,
+  djsDAT: DAT,
+  djsBuilders: builder
 } = require('./imports.js');
 
-const serverID = '743513988876337304';
+const CONSTANTS = require('./constants.js');
 let server;
 
 module.exports = {
   prepare: async function() {
-    let done = false;
     console.log('Logging in...');
 
-    client.on('ready', () => {
+    let done = false;
+
+    client.on('ready', async () => {
       console.log(`Logged in as ${client.user.tag}!`);
-      server = client.guilds.cache.get(serverID);
+      server = client.guilds.cache.get(CONSTANTS.guild_id);
 
       //require('./gtc19.js').init(); //new data display method invalidates current approach, see https://github.com/adityaxdiwakar/gt-jpj-tracking
-      require('./twitch-announcer.js').init();
-      require('./vc-announcer.js').init();
+      await require('./twitch-announcer.js').init();
+      await require('./vc-announcer.js').init();
 
+      const rest = new REST.REST({ version: '9' }).setToken(CONSTANTS.client_token);
+      for (let cmdh of client.commandHeaders) {
+        if (cmdh instanceof builder.SlashCommandBuilder) {
+          throw new Error('Convert slash commands to json');
+        }
+      }
+      try {
+        rest.put(DAT.Routes.applicationGuildCommands(CONSTANTS.client_id, CONSTANTS.guild_id), { body: client.commandHeaders });
+      } catch (e) {
+        e.message = `[REST] Slash command registration failed: ${e.message}`;
+        throw e;
+      }
       done = true;
     });
-    await client.login(fs.readFileSync('data/Quasirandom/token', 'utf8'));
+
+    await client.login(CONSTANTS.client_token);
 
     while (!done) {
       await new Promise(resolve => setTimeout(resolve, 500));

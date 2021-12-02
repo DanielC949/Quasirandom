@@ -15,6 +15,9 @@ function StreamAnnouncer() {
   let channelAlerts, oauth, followedChannels = [], lastSeen = new Map();
 
   async function reportLive() {
+    if (!(await AjaxLib.isConnected())) {
+      return;
+    }
     await checkTokenExpiration();
     const now = Date.now();
     for (let e of lastSeen) {
@@ -28,10 +31,14 @@ function StreamAnnouncer() {
         continue;
       }
       if (channel.started_at !== res.started_at) {
-        channel.started_at = res.started_at;
         if (!lastSeen.has(channel.display_name)) {
-          channelAlerts.send(`${Lib.discordEscape(res.display_name)} is live: ${Lib.discordEscape(res.title)}`);
+          try {
+            channelAlerts.send(`${Lib.discordEscape(res.display_name)} is live: ${Lib.discordEscape(res.title)}`);
+          } catch {
+            continue;
+          }
         }
+        channel.started_at = res.started_at;
       }
       lastSeen.set(channel.display_name, now);
     }
@@ -40,7 +47,13 @@ function StreamAnnouncer() {
 
   async function getChannel(channelName) {
     const headers = {'client-id': oauth.client_id, 'Authorization': 'Bearer ' + oauth.cur_token};
-    let res = JSON.parse(await AjaxLib.httpsget('https://api.twitch.tv/helix/search/channels?query=' + channelName + '&first=1', headers));
+    let res;
+    try {
+      let getreq = await AjaxLib.httpsget('https://api.twitch.tv/helix/search/channels?query=' + channelName + '&first=1', headers);
+      res = JSON.parse(getreq);
+    } catch (e) {
+      return null;
+    }
     if (res.status && res.status !== 200) {
       Logger.error('in twitch-announcer, getChannel(): ' + res.status);
     }
@@ -49,14 +62,26 @@ function StreamAnnouncer() {
 
   async function checkTokenExpiration() {
     const headers = {'Authorization': 'OAuth ' + oauth.cur_token};
-    let token = JSON.parse(await AjaxLib.httpsget('https://id.twitch.tv/oauth2/validate', headers));
+    let token;
+    try {
+      let res = await AjaxLib.httpsget('https://id.twitch.tv/oauth2/validate', headers);
+      token = JSON.parse(res);
+    } catch (e) {
+      return;
+    }
     if (token.status === 401) {
       await refreshToken();
     }
   }
 
   async function refreshToken() {
-    let token = JSON.parse(await AjaxLib.httpspost(`https://id.twitch.tv/oauth2/token?client_id=${oauth.client_id}&client_secret=${oauth.client_secret}&grant_type=client_credentials`, null, null));
+    let token;
+    try {
+      let res = await AjaxLib.httpspost(`https://id.twitch.tv/oauth2/token?client_id=${oauth.client_id}&client_secret=${oauth.client_secret}&grant_type=client_credentials`, null, null)
+      token = JSON.parse(res);
+    } catch (e) {
+      return;
+    }
     if (token.access_token) {
       oauth.cur_token = token.access_token;
       fs.promises.writeFile('data/twitch-announcer/oauth.json', JSON.stringify(oauth));

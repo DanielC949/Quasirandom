@@ -116,28 +116,30 @@ const Logger = () => {
     error: msg => {
       logFile.write(`${(new Date(Date.now())).toUTCString()}: ERROR: ${msg}\n`);
       try {
-        logChannel.send('ERROR: ' + msg);
+        logChannel.send('[ERROR] ' + msg);
       } catch (e) { }
     },
     warn: msg => {
       logFile.write(`${(new Date(Date.now())).toUTCString()}: WARNING: ${msg}\n`);
       try {
-        logChannel.send('WARNING: ' + msg);
+        logChannel.send('[WARNING] ' + msg);
       } catch (e) { }
     },
     info: msg => {
       logFile.write(`${(new Date(Date.now())).toUTCString()}: INFO: ${msg}\n`);
       try {
-        logChannel.send('INFO: ' + msg);
+        logChannel.send('[INFO] ' + msg);
       } catch (e) { }
-    }
+    },
+    finalize: () => logFile.end()
   };
 }
+const LOGGER_INSTANCE = Logger();
 
 
 module.exports = {
   Lib: Lib,
   WebScraperLib: WebScraperLib,
   AjaxLib: AjaxLib,
-  Logger: Logger()
+  Logger: LOGGER_INSTANCE
 };

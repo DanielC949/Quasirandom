@@ -13,7 +13,8 @@ const GTHealthURL = 'https://health.gatech.edu/coronavirus/health-alerts';
 const affectedStatement = '; all affected individuals are being notified as consistent with Georgia Department of Public Health.';
 const onCampusCase = 'The student lives on campus and is returning home to isolate or moving to isolation housing provided by Georgia Tech Housing and Residence life' + affectedStatement;
 const offCampusCase = 'The student lives off campus and is isolating away from campus' + affectedStatement;
-const greekCase = 'The student lives in Greek Housing and is returning home to isolate or is isolating in Greek Housing with other affected individuals' + affectedStatement;
+const greekCase1 = 'The student lives in Greek Housing and is returning home to isolate or is isolating in Greek Housing with other affected individuals' + affectedStatement;
+const greekCase2 = 'The student lives in Greek Housing and is isolating' + affectedStatement;
 
 const updateChannelID = '743517963541282877', logChannelID = '743989111676993649';
 let channelCovid, channelLog;
@@ -22,7 +23,7 @@ async function process(html) {
   let output = '';
   const $ = cheerio.load(html);
   const curCases = parseInt($('.super-block__teaser > table > tbody > tr > td').get(2).children[0].data);
-  const numCases = parseInt(await fs.promises.readFile('cases.txt', 'utf8'));
+  const numCases = parseInt(await fs.promises.readFile('data/GTC19/cases.txt', 'utf8'));
   Lib.ensureWriteToFile('cases.txt', curCases + '');
   if (curCases - numCases === 0) {
     return null;
@@ -69,18 +70,19 @@ async function process(html) {
     }
 
     const curDate = new Date(Date.now()).toLocaleString('en-US', {timeZone:'America/New_York', day:'numeric', month:'long', year:'numeric'});
+    const caseDate = WebScraperLib.stripNBSP(curRow.get(2).children[0].data);
     if (desc === onCampusCase) {
-      if (curRow.get(2).children[0].data !== curDate)
-        output += 'On campus student: ' + curRow.get(2).children[0].data + '\n';
+      if (caseDate !== curDate)
+        output += 'On campus student: ' + caseDate + '\n';
     } else if (desc === offCampusCase) {
-      if (curRow.get(2).children[0].data !== curDate)
-        output += 'Off campus student: ' + curRow.get(2).children[0].data + '\n';
-    } else if (desc === greekCase) {
-      if (curRow.get(2).children[0].data !== curDate)
-        output += 'Greek student: ' + curRow.get(2).children[0].data + '\n';
+      if (caseDate !== curDate)
+        output += 'Off campus student: ' + caseDate + '\n';
+    } else if (desc === greekCase1 || desc === greekCase2) {
+      if (caseDate !== curDate)
+        output += 'Greek student: ' + caseDate + '\n';
     } else {
       output += '\n' + curRow.get(1).children[0].data + ': ' +
-        curRow.get(2).children[0].data + '\n' +
+        caseDate + '\n' +
         desc + '\n\n';
     }
   }
@@ -102,7 +104,6 @@ async function send() {
 }
 
 async function check() {
-  channelLog.send('Checking at ' + new Date(Date.now()).toLocaleString('en-US', { timeZone:'America/New_York' }) + '\n');
   send().catch(err => console.log(err));
 }
 
@@ -111,6 +112,6 @@ module.exports = {
     channelCovid = server.channels.cache.get(updateChannelID);
     channelLog = server.channels.cache.get(logChannelID);
     check();
-    setInterval(check, 3600000);
+    setInterval(check, 1800000);
   }
 }

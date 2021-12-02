@@ -1,25 +1,10 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const app = express();
-const port = 3000;
-
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-app.use(express.static('public'));
-
-app.get('/', (req, res) => res.send('Hello World!'));
-
-app.listen(port, () => console.log(`Listening at http://localhost:${port}`));
-
-//=======================================//
-
 const {
-  discordClient: client
+  discordClient: client,
+  fs
 } = require('./imports.js');
 
 console.log('Logging in...');
-client.login(process.env.BOT_TOKEN);
+client.login(fs.readFileSync('data/Quasirandom/token.txt', 'utf8').split('\r\n')[0]); //compensate for line ending
 
 require('./serverready.js').prepare();
 

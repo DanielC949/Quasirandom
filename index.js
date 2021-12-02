@@ -14,11 +14,10 @@ client.on('message', msg => {
   }
 });
 
-client.on('error', console.log);
+client.on('message', message => {
+  msg = message.content.split(' ');
+  if (msg.length <= 1 || msg[0] !== '!ram') return;
+  message.channel.send(msg.slice(1).join(' '));
+})
 
-client.on('rateLimit', info => {
-  console.log('TL: ' + info.timeout);
-  console.log('Lim: ' + info.limit);
-  console.log('Path: ' + info.path);
-  console.log('Route: ' + info.route);
-});
+client.on('error', console.log);

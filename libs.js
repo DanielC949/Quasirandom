@@ -78,8 +78,8 @@ const AjaxLib = {
     });
   },
   httpspost: function(url, headers, data, encoding = 'utf8') {
-    return new Promise((resovle, reject) => {
-      let req = https.request(url, {headers: headers}, res => {
+    return new Promise((resolve, reject) => {
+      let req = https.request(url, headers ? {method: 'POST', headers: headers} : {method: 'POST'}, res => {
         res.setEncoding(encoding);
         let data = '';
         res.on('data', d => data += d);
@@ -93,10 +93,19 @@ const AjaxLib = {
     });
   }
 }
+const Logger = () => {
+  const logChannel = require('./serverready.js').getServer().channels.cache.get('805146337741242368');
+  return {
+    error: msg => logChannel.send('@admin ERROR: ' + msg),
+    warn: msg => logChannel.send('@admin WARNING: ' + msg),
+    info: msg => logChannel.send('INFO: ' + msg)
+  };
+}
 
 
 module.exports = {
   Lib: Lib,
   WebScraperLib: WebScraperLib,
-  AjaxLib: AjaxLib
+  AjaxLib: AjaxLib,
+  Logger: Logger()
 };

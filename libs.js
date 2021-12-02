@@ -2,7 +2,6 @@ const {
   axios,
   fs,
   https,
-  dns,
   discordClient: client
 } = require('./imports.js');
 
@@ -73,14 +72,6 @@ const WebScraperLib = {
   }
 };
 const AjaxLib = {
-  isConnected: async function() {
-    try {
-      await dns.promises.lookupService('8.8.8.8', 53);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  },
   httpsget: function(url, headers, encoding = 'utf8') {
     return new Promise((resolve, reject) => {
       let req = https.get(url, {headers: headers}, res => {
@@ -109,37 +100,9 @@ const AjaxLib = {
     });
   }
 }
-const Logger = () => {
-  const logChannel = require('./serverready.js').getServer().channels.cache.get('805146337741242368');
-  const logFile = fs.createWriteStream('data/Quasirandom/log.txt', {flags: 'a'});
-  return {
-    error: msg => {
-      logFile.write(`${(new Date(Date.now())).toUTCString()}: ERROR: ${msg}\n`);
-      try {
-        logChannel.send('[ERROR] ' + msg);
-      } catch (e) { }
-    },
-    warn: msg => {
-      logFile.write(`${(new Date(Date.now())).toUTCString()}: WARNING: ${msg}\n`);
-      try {
-        logChannel.send('[WARNING] ' + msg);
-      } catch (e) { }
-    },
-    info: msg => {
-      logFile.write(`${(new Date(Date.now())).toUTCString()}: INFO: ${msg}\n`);
-      try {
-        logChannel.send('[INFO] ' + msg);
-      } catch (e) { }
-    },
-    finalize: () => logFile.end()
-  };
-}
-const LOGGER_INSTANCE = Logger();
-
 
 module.exports = {
   Lib: Lib,
   WebScraperLib: WebScraperLib,
-  AjaxLib: AjaxLib,
-  Logger: LOGGER_INSTANCE
+  AjaxLib: AjaxLib
 };

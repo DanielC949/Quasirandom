@@ -4,9 +4,9 @@ const {
 } = require('./imports.js');
 const {
   Lib,
-  AjaxLib,
-  Logger
+  AjaxLib
 } = require('./libs.js');
+const { Logger } = require('./logger.js');
 const server = require('./serverready.js').getServer();
 
 const alertChannelID = '782339361450098718';
@@ -15,10 +15,9 @@ function StreamAnnouncer() {
   let channelAlerts, oauth, followedChannels = [], lastSeen = new Map();
 
   async function reportLive() {
-    if (!(await AjaxLib.isConnected())) {
+    if (await checkTokenExpiration() === null) {
       return;
     }
-    await checkTokenExpiration();
     const now = Date.now();
     for (let e of lastSeen) {
       if (now - e[1] > 600000) {
@@ -27,7 +26,7 @@ function StreamAnnouncer() {
     }
     for (let channel of followedChannels) {
       let res = await getChannel(channel.display_name);
-      if (!res || !res.is_live) {
+      if (!res?.is_live) {
         continue;
       }
       if (channel.started_at !== res.started_at) {
@@ -57,7 +56,7 @@ function StreamAnnouncer() {
     if (res.status && res.status !== 200) {
       Logger.error('in twitch-announcer, getChannel(): ' + res.status);
     }
-    return res.data.length > 0 && res.data[0].display_name.toLowerCase() === channelName ? res.data[0] : null;
+    return res.data?.length > 0 && res.data[0].display_name.toLowerCase() === channelName ? res.data[0] : null;
   }
 
   async function checkTokenExpiration() {
@@ -67,7 +66,7 @@ function StreamAnnouncer() {
       let res = await AjaxLib.httpsget('https://id.twitch.tv/oauth2/validate', headers);
       token = JSON.parse(res);
     } catch (e) {
-      return;
+      return null;
     }
     if (token.status === 401) {
       await refreshToken();
@@ -80,7 +79,7 @@ function StreamAnnouncer() {
       let res = await AjaxLib.httpspost(`https://id.twitch.tv/oauth2/token?client_id=${oauth.client_id}&client_secret=${oauth.client_secret}&grant_type=client_credentials`, null, null)
       token = JSON.parse(res);
     } catch (e) {
-      return;
+      return null;
     }
     if (token.access_token) {
       oauth.cur_token = token.access_token;
@@ -145,6 +144,11 @@ function StreamAnnouncer() {
         Logger.error('in twitch-announcer: ' + e);
       }
     }, 60000);
+    try {
+      reportLive();
+    } catch (e) {
+      Logger.error('in twitch-announcer: ' + e);
+    }
   }
 }
 

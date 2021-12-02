@@ -12,19 +12,28 @@ const server = require('./serverready.js').getServer();
 const alertChannelID = '782339361450098718';
 
 function StreamAnnouncer() {
-  let channelAlerts, oauth, followedChannels = [];
+  let channelAlerts, oauth, followedChannels = [], lastSeen = new Map();
 
   async function reportLive() {
-    await updateTokenExpiration();
+    await checkTokenExpiration();
+    const now = Date.now();
+    for (let e of lastSeen) {
+      if (now - e[1] > 600000) {
+        lastSeen.delete(e[0]);
+      }
+    }
     for (let channel of followedChannels) {
-      let res = await getChannel(channel);
-      if (!res) {
+      let res = await getChannel(channel.display_name);
+      if (!res || !res.is_live) {
         continue;
       }
-      if (res.started_at !== '' && channel.started_at !== res.started_at && res.display_name === channel.display_name) {
+      if (channel.started_at !== res.started_at) {
         channel.started_at = res.started_at;
-        channelAlerts.send(`${res.display_name} is live: ${res.title}`);
+        if (!lastSeen.has(channel.display_name)) {
+          channelAlerts.send(`${Lib.discordEscape(res.display_name)} is live: ${Lib.discordEscape(res.title)}`);
+        }
       }
+      lastSeen.set(channel.display_name, now);
     }
     fs.promises.writeFile('data/twitch-announcer/following.json', JSON.stringify(followedChannels));
   }
@@ -35,16 +44,14 @@ function StreamAnnouncer() {
     if (res.status && res.status !== 200) {
       Logger.error('in twitch-announcer, getChannel(): ' + res.status);
     }
-    return res.data.length > 0 && res.data[0].display_name === channelName ? res.data[0] : null;
+    return res.data.length > 0 && res.data[0].display_name.toLowerCase() === channelName ? res.data[0] : null;
   }
 
-  async function updateTokenExpiration() {
+  async function checkTokenExpiration() {
     const headers = {'Authorization': 'OAuth ' + oauth.cur_token};
     let token = JSON.parse(await AjaxLib.httpsget('https://id.twitch.tv/oauth2/validate', headers));
     if (token.status === 401) {
       await refreshToken();
-    } else {
-      Logger.error('in twitch-announcer, updateTokenExpiration(), returned ' + token.status);
     }
   }
 
@@ -95,6 +102,8 @@ function StreamAnnouncer() {
           channels.push(channel.display_name);
         }
         channelAlerts.send(channels.join(', '));
+      } else if (msg[0] === '!check') {
+        reportLive();
       }
     });
   }

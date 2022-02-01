@@ -55,7 +55,7 @@ function StreamAnnouncer() {
       return null;
     }
     if (res.status && res.status !== 200) {
-      Logger.error('[twitch-announcer::getChannel()]: ' + res.status);
+      Logger.error('[TWITCH-ANNOUNCER] getChannel: ' + res.status);
     }
     return res.data?.length > 0 && res.data[0].display_name.toLowerCase() === channelName ? res.data[0] : null;
   }
@@ -85,9 +85,9 @@ function StreamAnnouncer() {
     if (token.access_token) {
       oauth.cur_token = token.access_token;
       fs.promises.writeFile('data/twitch-announcer/oauth.json', JSON.stringify(oauth));
-      Logger.info('[twitch-announcer] refreshed OAuth token');
+      Logger.info('[TWITCH-ANNOUNCER] refreshed OAuth token');
     } else {
-      Logger.error('[twitch-announcer::refreshToken()] returned ' + token.status);
+      Logger.error('[TWITCH-ANNOUNCER] refreshToken request returned ' + token.status);
     }
   }
 
@@ -195,13 +195,13 @@ function StreamAnnouncer() {
       try {
         reportLive();
       } catch (e) {
-        Logger.error('[twitch-announcer] ' + e);
+        Logger.error('[TWITCH-ANNOUNCER] reportLive: ' + e);
       }
     }, 60000);
     try {
       reportLive();
     } catch (e) {
-      Logger.error('[twitch-announcer] ' + e);
+      Logger.error('[TWITCH-ANNOUNCER] reportLive: ' + e);
     }
   }
 }

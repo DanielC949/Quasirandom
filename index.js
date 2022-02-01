@@ -16,12 +16,12 @@ async function init() {
 
 async function initProcess(Logger) {
   process.on('uncaughtException', (error, origin) => {
-    onExit(`${(new Date(Date.now())).toUTCString()}: [ERROR (uncaughtException)] ${error}\n`);
+    onExit(`${(new Date(Date.now())).toUTCString()}: [ERROR] [PROCESS] Unhandled exception in ${origin}: ${error}\n`);
   });
   process.on('unhandledRejection', (reason, promise) => {
-    onExit(`${(new Date(Date.now())).toUTCString()}: [ERROR (unhandledRejection)] ${reason}\n`);
+    onExit(`${(new Date(Date.now())).toUTCString()}: [ERROR] [PROCESS] Unhandled rejection from ${promise}: ${reason}\n`);
   });
-  process.on('exit', code => onExit(`${(new Date(Date.now())).toUTCString()}: [ERROR (exit)] Exiting with code ${code}\n`));
+  process.on('exit', code => onExit(`${(new Date(Date.now())).toUTCString()}: [ERROR] [PROCESS] Exiting with code ${code}\n`));
 
   function onExit(msg) {
     Logger.finalize();
@@ -49,7 +49,7 @@ async function bindGlobalCommands() {
     )
     .toJSON()
   );
-  client.commands.set('ram', async interaction => {
+  client.commands.set('echo', async interaction => {
     interaction.reply(interaction.options.getString('message'));
   });
 

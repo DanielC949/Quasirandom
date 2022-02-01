@@ -32,7 +32,6 @@ module.exports = {
         rest.put(DAT.Routes.applicationGuildCommands(CONSTANTS.client_id, CONSTANTS.guild_id), { body: client.commandHeaders });
       } catch (e) {
         e.message = `[REST] Slash command registration failed: ${e.message}`;
-        throw e;
       }
       done = true;
     });

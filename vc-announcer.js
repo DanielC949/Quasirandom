@@ -38,7 +38,7 @@ function VCAnnouncer() {
     const game = member.presence?.activities.filter(e => e.type === 'PLAYING');
 
     try {
-      channel.send(`${member.displayName} is streaming${game?.length > 0 ? ' ' + game?.[0].name : ''}`);
+      channel.send(`${member.displayName} is streaming${game?.length > 0 ? ' ' + game[0].name : ''}`);
     } catch (e) {
       Logger.warn('[vc-announcer] unable to send streaming alert: ' + e);
     }

@@ -1,9 +1,7 @@
-const {
-  discordClient: client,
-  djsREST: REST,
-  djsDAT: DAT,
-  djsBuilders: builder
-} = require('./imports.js');
+const client = require('./client.js');
+const REST = require('@discordjs/rest');
+const DAT = require('discord-api-types/v9');
+const builder = require('@discordjs/builders');
 
 const CONSTANTS = require('./constants.js');
 let server;
@@ -21,6 +19,7 @@ module.exports = {
       //require('./gtc19.js').init(); //new data display method invalidates current approach, see https://github.com/adityaxdiwakar/gt-jpj-tracking
       await require('./twitch-announcer.js').init();
       await require('./vc-announcer.js').init();
+      await require('./crc-checker.js').init();
 
       const rest = new REST.REST({ version: '9' }).setToken(CONSTANTS.client_token);
       for (let cmdh of client.commandHeaders) {
@@ -31,7 +30,7 @@ module.exports = {
       try {
         rest.put(DAT.Routes.applicationGuildCommands(CONSTANTS.client_id, CONSTANTS.guild_id), { body: client.commandHeaders });
       } catch (e) {
-        e.message = `[REST] Slash command registration failed: ${e.message}`;
+        Logger.error(`[REST] Slash command registration failed: ${e.message}`);
       }
       done = true;
     });

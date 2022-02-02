@@ -1,5 +1,5 @@
 const CONSTANTS = require('./constants.js');
-const { fs } = require('./imports.js');
+const fs = require('fs');
 
 function UTCDate() {
   return (new Date(Date.now())).toUTCString();
@@ -36,7 +36,7 @@ const Logger = () => {
       try {
         logChannel.send('[INFO] ' + msg);
       } catch (e) {
-          LOGGER_INSTANCE.error(`${UTCDate()}: [ERROR] [LOGGER] logging info message to Discord: ${e}`);
+        LOGGER_INSTANCE.error(`${UTCDate()}: [ERROR] [LOGGER] logging info message to Discord: ${e}`);
       }
     },
     finalize: () => logFile.end()
@@ -44,6 +44,4 @@ const Logger = () => {
 }
 const LOGGER_INSTANCE = Logger();
 
-module.exports = {
-  Logger: LOGGER_INSTANCE
-};
+module.exports = LOGGER_INSTANCE;

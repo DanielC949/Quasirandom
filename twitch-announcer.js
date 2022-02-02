@@ -1,13 +1,11 @@
-const {
-  discordClient: client,
-  fs,
-  djsBuilders: builder
-} = require('./imports.js');
+const client = require('./client.js');
+const fs = require('fs');
+const builder = require('@discordjs/builders');
 const {
   Lib,
   AjaxLib
 } = require('./libs.js');
-const { Logger } = require('./logger.js');
+const Logger = require('./logger.js');
 const server = require('./serverready.js').getServer();
 
 const CONSTANTS = require('./constants.js');

@@ -1,8 +1,6 @@
-const {
-  discordClient: client,
-  fs
-} = require('./imports.js');
-const { Logger } = require('./logger.js');
+const client = require('./client.js');
+const fs = require('fs');
+const Logger = require('./logger.js');
 const server = require('./serverready.js').getServer();
 
 function VCAnnouncer() {

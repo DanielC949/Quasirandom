@@ -1,9 +1,11 @@
-const {
-  axios,
-  fs,
-  https,
-  discordClient: client
-} = require('./imports.js');
+const axios = require('axios').default;
+const fs = require('fs');
+const https = require('https');
+const client = require('./client.js');
+const { wrapper: acjsWrapper } = require('axios-cookiejar-support');
+const { CookieJar } = require('tough-cookie');
+
+acjsWrapper(axios);
 
 const Lib = {
   sleep: function(ms) {
@@ -49,8 +51,14 @@ const Lib = {
   }
 };
 const WebScraperLib = {
-  scrape: async function(url) {
-    return (await axios.get(url)).data;
+  getPage: async function(url, keepCookies = false, options = {}) {
+    if (keepCookies) {
+      options.jar = new CookieJar();
+      options.withCredentials = true;
+      return (await axios.get(url, options)).data;
+    } else {
+      return (await axios.get(url, options)).data;
+    }
   },
   stripNBSP: function(str) {
     let out = '';

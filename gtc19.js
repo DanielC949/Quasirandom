@@ -1,7 +1,5 @@
-const {
-  cheerio,
-  fs
-} = require('./imports.js');
+const cheerio = require('cheerio');
+const fs = require('fs');
 const {
   Lib,
   WebScraperLib
@@ -92,7 +90,7 @@ async function process(html) {
 }
 
 async function send() {
-  const msg = await process(await WebScraperLib.scrape(GTHealthURL));
+  const msg = await process(await WebScraperLib.getPage(GTHealthURL));
   if (msg === null || msg === '') {
     return;
   } else {

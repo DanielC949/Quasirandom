@@ -1,15 +1,13 @@
-const {
-  discordClient: client,
-  fs,
-  djsBuilders: builder
-} = require('./imports.js');
+const client = require('./client.js');
+const fs = require('fs');
+const builder = require('@discordjs/builders');
 
 async function init() {
   client.commandHeaders = [];
   client.commands = new Map();
   await bindGlobalCommands();
   await require('./serverready.js').prepare();
-  const { Logger } = require('./logger.js');
+  const Logger = require('./logger.js');
   await initProcess(Logger);
   await initClient(Logger);
 }
@@ -100,12 +98,12 @@ async function initClient(Logger) {
       try {
         await f(interaction);
       } catch (e) {
-        Logger.error(`[Command ${interaction.commandName}] Uncaught exception: ${e.message}`);
+        Logger.error(`[COMMAND] [${interaction.commandName}] Uncaught exception: ${e.message}`);
       }
     }
   })
 
-  client.on('error', err => Logger.error('[Client] ' + err, true));
+  client.on('error', err => Logger.error('[CLIENT] ' + err, true));
 }
 
 init();
